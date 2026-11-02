@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7fb">
+    <title>CPU Load Balancing Simulator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="simulator.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="CPU Lab home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>CPU<span class="brand-light">LAB</span></span>
+      </a>
+      <span class="project-tag">OPERATING SYSTEMS <span aria-hidden="true">/</span> MINI PROJECT</span>
+    </header>
+
+    <main class="page">
+      <section class="intro">
+        <div>
+          <p class="eyebrow"><span class="live-dot"></span> SIMULATOR</p>
+          <h1>CPU Load Balancing Simulator</h1>
+        </div>
+      </section>
+
+      <section class="controls panel" aria-label="Simulation settings">
+        <div class="control-heading">
+          <div>
+            <h2>Simulation settings</h2>
+          </div>
+        </div>
+        <div class="control-row">
+          <label class="field">
+            <span>Number of CPUs</span>
+            <select id="cpu-count" aria-label="Number of CPUs">
+              <option value="1">1 CPU</option>
+              <option value="2">2 CPUs</option>
+              <option value="3">3 CPUs</option>
+              <option value="4" selected>4 CPUs</option>
+              <option value="6">6 CPUs</option>
+              <option value="8">8 CPUs</option>
+              <option value="12">12 CPUs</option>
+              <option value="16">16 CPUs</option>
+            </select>
+          </label>
+          <label class="field strategy-field">
+            <span>Scheduling algorithm</span>
+            <select id="algorithm" aria-label="Scheduling algorithm">
+              <option value="fcfs">FCFS</option>
+              <option value="sjf">SJF</option>
+              <option value="srtf">SRTF</option>
+              <option value="priority">Priority</option>
+              <option value="rr">Round Robin</option>
+              <option value="hrrn">HRRN</option>
+            </select>
+          </label>
+          <label class="field strategy-field" hidden>
+            <span>CPU assignment</span>
+            <select id="balancer" aria-label="CPU assignment strategy">
+              <option value="least">Least Loaded</option>
+              <option value="roundRobin">Round Robin</option>
+              <option value="random">Random</option>
+            </select>
+          </label>
+          <label class="field speed-field">
+            <span>Animation speed</span>
+            <select id="speed" aria-label="Simulation animation speed">
+              <option value="450">Slow</option>
+              <option value="180" selected>Normal</option>
+              <option value="45">Fast</option>
+            </select>
+          </label>
+        </div>
+        <div class="control-row secondary-controls" hidden>
+          <label id="quantum-field" class="field" hidden>
+            <span>Time quantum (ticks)</span>
+            <input id="quantum" type="number" min="1" max="1000" value="4" inputmode="numeric">
+          </label>
+          <label id="priority-mode-field" class="field" hidden>
+            <span>Priority scheduling</span>
+            <select id="priority-mode" aria-label="Priority scheduling mode">
+              <option value="preemptive">Preemptive</option>
+              <option value="nonpreemptive">Non-preemptive</option>
+            </select>
+          </label>
+          <label class="field objective-field" hidden>
+            <span>Optimize for</span>
+            <select id="objective" aria-label="Algorithm optimization objective">
+              <option value="averageWaitingTime">Minimum waiting time</option>
+              <option value="averageTurnaroundTime">Minimum turnaround time</option>
+              <option value="averageResponseTime">Minimum response time</option>
+              <option value="throughput">Maximum throughput</option>
+              <option value="averageCpuUtilization">Maximum CPU utilization</option>
+              <option value="makespan">Minimum makespan</option>
+              <option value="balanced">Balanced performance</option>
+            </select>
+          </label>
+          <label class="migration-toggle" hidden><input id="migration" type="checkbox" checked><span><strong>Dynamic migration</strong><small>Every 15 ticks, move the largest waiting job if CPU loads differ by more than 8 ticks.</small></span></label>
+        </div>
+        <div class="action-group main-actions">
+          <button id="run-button" class="button button-primary" type="button"><span aria-hidden="true">▶</span> Run simulation</button>
+          <button id="compare-button" class="button button-secondary" type="button" hidden>Compare algorithms</button>
+        </div>
+      </section>
+
+      <details class="panel workload-panel">
+        <summary class="panel-heading">
+          <div>
+            <h3>Workload</h3>
+            <p>Edit the processes used in the simulation</p>
+          </div>
+          <span id="process-count" class="workload-chip">16 processes</span>
+        </summary>
+        <div class="workload-actions">
+          <button id="sample-button" class="button button-secondary" type="button">Load sample</button>
+          <button id="add-process-button" class="button button-secondary" type="button">+ Add process</button>
+          <button id="random-button" class="button button-secondary" type="button">Generate random</button>
+          <button id="reset-button" class="button button-secondary" type="button">Reset</button>
+          <label class="count-field">Process count <input id="desired-count" type="number" min="1" max="500" value="16"></label>
+          <button id="apply-count-button" class="button button-secondary" type="button">Set count</button>
+        </div>
+        <div class="table-wrap workload-table-wrap">
+          <table>
+            <thead>
+              <tr><th>PROCESS ID</th><th>ARRIVAL TIME</th><th>BURST TIME</th><th>PRIORITY <span class="priority-help">(lower number = higher priority)</span></th><th></th></tr>
+            </thead>
+            <tbody id="workload-body"></tbody>
+          </table>
+        </div>
+        <p id="validation-message" class="validation-message" role="alert"></p>
+      </details>
+
+      <section class="results" aria-label="Simulation dashboard">
+        <div class="section-title">
+          <div>
+            <h2>Simulation</h2>
+          </div>
+          <div class="run-state"><span id="status-dot" class="status-dot"></span><span id="status-text" aria-live="polite">Ready to run</span></div>
+        </div>
+
+        <div class="metrics-grid" aria-live="polite">
+          <article class="metric-card">
+            <span class="metric-label">SIMULATION TIME</span>
+            <strong id="metric-time">—</strong>
+            <span class="metric-foot">ticks elapsed</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">AVG. WAITING TIME</span>
+            <strong id="metric-wait">—</strong>
+            <span class="metric-foot">ticks per process</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">CPU UTILIZATION</span>
+            <strong id="metric-util">—</strong>
+            <span class="metric-foot">average across CPUs</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">LOAD IMBALANCE</span>
+            <strong id="metric-imbalance">—</strong>
+            <span class="metric-foot">busy-time spread across CPUs</span>
+          </article>
+          <article class="metric-card"><span class="metric-label">AVG. TURNAROUND</span><strong id="metric-turnaround">—</strong><span class="metric-foot">ticks per process</span></article>
+          <article class="metric-card"><span class="metric-label">AVG. RESPONSE</span><strong id="metric-response">—</strong><span class="metric-foot">ticks until first run</span></article>
+          <article class="metric-card"><span class="metric-label">THROUGHPUT</span><strong id="metric-throughput">—</strong><span class="metric-foot">processes per tick</span></article>
+          <article class="metric-card"><span class="metric-label">CONTEXT SWITCHES</span><strong id="metric-switches">—</strong><span class="metric-foot">CPU process changes</span></article>
+          <article class="metric-card"><span class="metric-label">CPU BUSY TIME</span><strong id="metric-busy">—</strong><span class="metric-foot">total execution ticks</span></article>
+          <article class="metric-card"><span class="metric-label">CPU IDLE TIME</span><strong id="metric-idle">—</strong><span class="metric-foot">total idle core-ticks</span></article>
+          <article class="metric-card"><span class="metric-label">AGGREGATE UTILIZATION</span><strong id="metric-aggregate">—</strong><span class="metric-foot">busy ÷ available CPU ticks</span></article>
+          <article class="metric-card"><span class="metric-label">MIGRATIONS</span><strong id="metric-migrations">—</strong><span class="metric-foot">processes moved between CPUs</span></article>
+          <article class="metric-card"><span class="metric-label">COMPLETED</span><strong id="metric-completed">—</strong><span class="metric-foot">finished processes</span></article>
+        </div>
+        <div class="simulation-actions" aria-label="Simulation controls" hidden>
+          <button id="pause-button" class="button button-secondary" type="button" disabled>Pause</button>
+          <button id="resume-button" class="button button-secondary" type="button" disabled>Resume</button>
+          <button id="step-button" class="button button-secondary" type="button" disabled>Step forward</button>
+          <button id="reset-simulation-button" class="button button-secondary" type="button" disabled>Reset run</button>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel cpu-panel">
+            <div class="panel-heading">
+              <div>
+                <h3>CPU activity</h3>
+              </div>
+              <span id="tick-label" class="tick-label">TICK —</span>
+            </div>
+            <div id="cpu-grid" class="cpu-grid">
+              <div class="empty-state">Run a simulation to see CPU activity.</div>
+            </div>
+            <div id="process-state-summary" class="process-state-summary" aria-live="polite" hidden></div>
+            <div class="ready-queue" hidden><strong>READY QUEUE</strong><span id="ready-queue">—</span></div>
+          </section>
+
+          <section class="panel explanation-panel" hidden>
+            <p class="section-kicker">THE IDEA</p>
+            <h3 id="strategy-title">Ready when you are</h3>
+            <p id="strategy-description">Pick a strategy and watch it assign work to the CPUs. Each process needs a different amount of CPU time.</p>
+            <div class="legend">
+              <span><i class="legend-dot running"></i> Running</span>
+              <span><i class="legend-dot waiting"></i> Ready</span>
+              <span><i class="legend-dot done"></i> Completed</span>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-copy"><span>Processes completed</span><strong id="progress-value">0 / 16</strong></div>
+              <div class="progress-track"><div id="progress-bar" class="progress-bar"></div></div>
+            </div>
+          </section>
+        </div>
+
+        <section id="gantt-section" class="panel gantt-panel" hidden>
+          <div class="panel-heading"><div><p class="section-kicker">EXECUTION TIMELINE</p><h3>Per-CPU Gantt chart</h3></div><span class="workload-chip">Each block shows which process ran and when</span></div>
+          <div id="gantt-chart" class="gantt-chart"></div>
+        </section>
+
+        <section id="comparison-section" class="panel comparison-panel" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">03 <span>HEAD TO HEAD</span></p>
+              <h3>Compare all strategies</h3>
+            </div>
+            <span id="comparison-caption" class="workload-chip">Same workload · same CPU count</span>
+          </div>
+          <label class="sort-field">Sort results by
+            <select id="sort-metric" aria-label="Sort comparison results">
+              <option value="averageWaitingTime">Waiting time</option>
+              <option value="averageTurnaroundTime">Turnaround time</option>
+              <option value="averageResponseTime">Response time</option>
+              <option value="throughput">Throughput</option>
+              <option value="averageCpuUtilization">CPU utilization</option>
+              <option value="makespan">Makespan</option>
+            </select>
+          </label>
+          <div id="comparison-chart" class="comparison-chart" role="img" aria-label="Algorithm performance comparison chart"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ALGORITHM</th><th>AVG. WAIT</th><th>AVG. TURNAROUND</th><th>AVG. RESPONSE</th><th>THROUGHPUT</th><th>CPU UTIL.</th><th>MAKESPAN</th><th>IMBALANCE</th><th>CONTEXT SWITCHES</th><th>MIGRATIONS</th></tr>
+              </thead>
+              <tbody id="comparison-body"></tbody>
+            </table>
+          </div>
+          <p id="comparison-verdict" class="verdict"></p>
+        </section>
+
+        <section id="process-section" class="panel process-panel" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">PROCESS DETAILS</p>
+              <h3>What happened to each process?</h3>
+            </div>
+            <span class="workload-chip">Waiting time = turnaround time − burst time</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>PROCESS</th><th>ARRIVAL</th><th>BURST</th><th>PRIORITY</th><th>FIRST RUN</th><th>CPU</th><th>COMPLETED</th><th>WAIT</th><th>TURNAROUND</th><th>RESPONSE</th><th>EXECUTION / MIGRATION HISTORY</th></tr>
+              </thead>
+              <tbody id="process-body"></tbody>
+            </table>
+          </div>
+        </section>
+        <p id="formula-note" class="formula-note" hidden>Waiting = turnaround − burst. Turnaround = completion − arrival. Response = first CPU start − arrival. Utilization = busy ticks ÷ (CPU count × makespan). Load imbalance = highest per-CPU utilization − lowest per-CPU utilization.</p>
+        <footer class="page-footer">CPU Load Balancing Simulator <span>·</span> Built for an Operating Systems mini project</footer>
+      </section>
+    </main>
+  </body>
+</html>
