@@ -39,7 +39,7 @@ int sim_run(Sim *s) {
         for (int i = 0; i < s->nprocs; i++) {
             if (s->procs[i].arrival == s->time && s->procs[i].cpu_id == -1) {
                 int c = balancer_assign(s->strategy, s->cpus, s->ncpu,
-                                        s->procs, i, &rr_next);
+                                        s->procs, &rr_next);
                 s->procs[i].cpu_id = c;
                 cpu_enqueue(&s->cpus[c], i);
             }
@@ -48,9 +48,8 @@ int sim_run(Sim *s) {
         /* 2. dynamic rebalancing */
         if (s->migration && s->migrate_interval > 0 &&
             s->time > 0 && s->time % s->migrate_interval == 0) {
-            int moved = 0;
             balancer_migrate(s->cpus, s->ncpu, s->procs,
-                             s->migrate_threshold, &moved);
+                             s->migrate_threshold);
         }
 
         /* 3. every CPU executes one tick */

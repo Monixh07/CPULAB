@@ -4,10 +4,8 @@
   const ALGORITHMS = {
     fcfs: { name: 'FCFS', description: 'First Come, First Served runs the earliest arriving ready process to completion.' },
     sjf: { name: 'SJF', description: 'Shortest Job First chooses the ready process with the smallest burst, then runs it to completion.' },
-    srtf: { name: 'SRTF', description: 'Shortest Remaining Time First can interrupt a running process when a shorter job becomes ready.' },
     priority: { name: 'Priority', description: 'Priority scheduling chooses the smallest priority number first. You can choose preemptive or non-preemptive mode.' },
-    rr: { name: 'Round Robin', description: 'Round Robin gives each ready process a turn of up to the selected time quantum.' },
-    hrrn: { name: 'HRRN', description: 'Highest Response Ratio Next chooses the ready process with the highest (waiting time + burst) / burst ratio.' }
+    rr: { name: 'Round Robin', description: 'Round Robin gives each ready process a turn of up to the selected time quantum.' }
   };
 
   const BALANCERS = {
@@ -135,8 +133,7 @@
   }
 
   function isPreemptive(simulation) {
-    return simulation.config.algorithm === 'srtf' ||
-      (simulation.config.algorithm === 'priority' && simulation.config.preemptivePriority);
+    return simulation.config.algorithm === 'priority' && simulation.config.preemptivePriority;
   }
 
   function compareReady(simulation, left, right) {
@@ -145,13 +142,7 @@
     const q = simulation.processes[right];
     let order = 0;
     if (algorithm === 'sjf') order = p.burst - q.burst;
-    else if (algorithm === 'srtf') order = p.remaining - q.remaining;
     else if (algorithm === 'priority') order = p.priority - q.priority;
-    else if (algorithm === 'hrrn') {
-      const pRatio = (simulation.time - p.arrival) / p.burst;
-      const qRatio = (simulation.time - q.arrival) / q.burst;
-      order = qRatio - pRatio;
-    }
     return order || p.arrival - q.arrival ||
       p.pid.localeCompare(q.pid, undefined, { numeric: true });
   }

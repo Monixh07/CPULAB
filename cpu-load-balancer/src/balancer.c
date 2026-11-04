@@ -11,8 +11,7 @@ const char *strat_name(int s) {
 }
 
 int balancer_assign(int strategy, CPU *cpus, int ncpu,
-                    const Process *procs, int pidx, int *rr_next) {
-    (void)pidx; /* assignment does not depend on the process itself here */
+                    const Process *procs, int *rr_next) {
     switch (strategy) {
         case STRAT_RR: {
             int c = (*rr_next) % ncpu;
@@ -37,10 +36,8 @@ int balancer_assign(int strategy, CPU *cpus, int ncpu,
     }
 }
 
-int balancer_migrate(CPU *cpus, int ncpu, Process *procs,
-                     int threshold, int *moved) {
-    *moved = 0;
-    if (ncpu < 2) return -1;
+void balancer_migrate(CPU *cpus, int ncpu, Process *procs, int threshold) {
+    if (ncpu < 2) return;
 
     int hi = 0, lo = 0;
     long hi_load = cpu_load(&cpus[0], procs);
@@ -50,16 +47,14 @@ int balancer_migrate(CPU *cpus, int ncpu, Process *procs,
         if (l > hi_load) { hi_load = l; hi = i; }
         if (l < lo_load) { lo_load = l; lo = i; }
     }
-    if (hi == lo) return -1;
-    if (hi_load - lo_load <= threshold) return -1; /* balanced enough */
+    if (hi == lo) return;
+    if (hi_load - lo_load <= threshold) return; /* balanced enough */
 
     /* Move the biggest waiting job off the overloaded CPU. The running
      * process is never migrated (that would need a context switch). */
     int idx = cpu_steal_largest(&cpus[hi], procs);
-    if (idx == -1) return -1; /* nothing waiting to move */
+    if (idx == -1) return; /* nothing waiting to move */
 
     procs[idx].cpu_id = lo;
     cpu_enqueue(&cpus[lo], idx);
-    *moved = 1;
-    return idx;
 }

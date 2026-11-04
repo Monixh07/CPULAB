@@ -42,11 +42,8 @@ window.addEventListener('DOMContentLoaded', () => {
   ]);
   assert('SJF is non-preemptive and chooses shortest available job', sjf.simulation.processes.map(p => p.completionTime).join() === '8,11,9');
 
-  const srtf = run('srtf', [
-    { pid: '1', arrival: 0, burst: 8, priority: 1 },
-    { pid: '2', arrival: 1, burst: 2, priority: 1 }
-  ]);
-  assert('SRTF preempts when a shorter job arrives', srtf.simulation.cpus[0].history.slice(0, 4).join() === '1,2,2,1');
+  assert('Only syllabus scheduling algorithms are available',
+    Object.keys(simulator.algorithms).join() === 'fcfs,sjf,priority,rr');
 
   const priority = run('priority', [
     { pid: '1', arrival: 0, burst: 4, priority: 3 },
@@ -67,13 +64,6 @@ window.addEventListener('DOMContentLoaded', () => {
   assert('Round Robin context switches count process changes', roundRobin.metrics.contextSwitches === 2, roundRobin.metrics.contextSwitches);
   assert('Accumulated waiting time matches completion-time formula', roundRobin.simulation.processes.every(process =>
     process.waitingTime === process.completionTime - process.arrival - process.burst));
-
-  const hrrn = run('hrrn', [
-    { pid: '1', arrival: 0, burst: 3, priority: 1 },
-    { pid: '2', arrival: 1, burst: 5, priority: 1 },
-    { pid: '3', arrival: 2, burst: 1, priority: 1 }
-  ]);
-  assert('HRRN selects the highest response ratio', hrrn.simulation.cpus[0].history.join() === '1,1,1,3,2,2,2,2,2');
 
   const multicore = simulator.run({
     processes: [
@@ -180,7 +170,7 @@ window.addEventListener('DOMContentLoaded', () => {
       { pid: '4', arrival: 3, burst: 1, priority: 3 }
     ],
     cpuCount: 2,
-    algorithm: 'srtf',
+    algorithm: 'priority',
     balancer: 'random',
     quantum: 2,
     migration: false

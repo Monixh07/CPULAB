@@ -24,14 +24,12 @@ enum {
 
 const char *strat_name(int s);
 
-/* Assign process `pidx` to a CPU. `rr_next` is round-robin cursor state
+/* Choose a CPU for a new process. `rr_next` is round-robin cursor state
  * owned by the caller. Returns the chosen CPU id. */
 int balancer_assign(int strategy, CPU *cpus, int ncpu,
-                    const Process *procs, int pidx, int *rr_next);
+                    const Process *procs, int *rr_next);
 
-/* Try one migration step. Sets *moved = 1 and returns the moved process
- * index when a job was migrated, otherwise *moved = 0. */
-int balancer_migrate(CPU *cpus, int ncpu, Process *procs,
-                     int threshold, int *moved);
+/* Try one migration step; leave running processes in place. */
+void balancer_migrate(CPU *cpus, int ncpu, Process *procs, int threshold);
 
 #endif
